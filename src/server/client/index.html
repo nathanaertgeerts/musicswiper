@@ -51,7 +51,7 @@
       </div>
     </script>
 
-    <script id="oauth-template" type="text/x-handlebars-template">
+    <script id="oauth-template" type="text/²">
       <h2>oAuth info</h2>
       <dl class="dl-horizontal">
         <dt>Access token</dt><dd class="text-overflow">{{access_token}}</dd>
@@ -109,7 +109,7 @@
                 },
                 success: function(response) {
                   userProfilePlaceholder.innerHTML = userProfileTemplate(response);
-
+console.log(response);
                   $('#login').hide();
                   $('#loggedin').show();
                 }

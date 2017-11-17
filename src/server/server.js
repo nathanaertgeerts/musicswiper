@@ -14,7 +14,7 @@ var spotifyApi = new SpotifyWebApi({
   clientSecret : 'a6338157c9bb5ac9c71924cb2940e1a7',
   redirectUri : 'http://www.example.com/callback'
 });
-MongoClient.connect('mongodb://localhost:27017/neverlost', function (err, _db) {
+MongoClient.connect('mongodb://localhost:27017/MusicAPP', function (err, _db) {
     if (err) throw err; // Let it crash
     console.log("Connected to MongoDB");
     db = _db;
@@ -63,22 +63,6 @@ app.use(bodyparser.urlencoded({
 }));
 
 var tokenExpirationEpoch;
-spotifyApi.clientCredentialsGrant()
-  .then(function(data) {
-    console.log('The access token expires in ' + data.body['expires_in']);
-    console.log('The access token is ' + data.body['access_token']);
-
-    // Save the access token so that it's used in future calls
-    spotifyApi.setAccessToken(data.body['access_token']);
-     return spotifyApi.getArtistTopTracks('0oSGxfWSnnOXhD2fKuz2Gy', 'GB')
-  }).then(function(data) {
-    console.log('The most popular tracks for David Bowie is..');
-    console.log('Drum roll..')
-    console.log(data.body.tracks)
-
-  }, function(err) {
-    console.log('Something went wrong when retrieving an access token', err.message);
-  });
 // First retrieve an access token
 app.get('/login', function(req, res) {
 
@@ -96,8 +80,6 @@ app.get('/login', function(req, res) {
       state: state
     }));
 });
-
-
 app.get('/callback', function(req, res) {
 
   // your application requests refresh and access tokens
@@ -142,6 +124,10 @@ app.get('/callback', function(req, res) {
         // use the access token to access the Spotify Web API
         request.get(options, function(error, response, body) {
           console.log(body);
+              users.insert(body, function (err, user) {
+            if (err) throw err;
+            console.log(user);
+        });
         });
 
         // we can also pass the token to the browser to make requests from there
@@ -159,57 +145,28 @@ app.get('/callback', function(req, res) {
     });
   }
 });
-/*app.post('/api/register', function (req, res) {
-    if (req.body.name && req.body.email && req.body.phone && req.body.username && req.body.password != null) {
-        var newUser = {
-            name: req.body.name
-            , email: req.body.email
-            , phone: req.body.phone
-            , username: req.body.username
-            , password: req.body.password
-            , id: uniqid()
-            , devId: null
-        };
-        users.insert(newUser, function (err, user) {
-            if (err) throw err;
-            console.log(user);
-            res.status(201).jsonp("succes");
-        });
-    }
-    else {
-        console.log(req.body);
-        res.status(201).jsonp("error");
-    }
-});
-app.post('/api/login', function (req, res) {
-    console.log(req.body.username);
-    users.findOne({
-        'username': req.body.username
-        , "password": req.body.password
-    }, function (err, user) {
-        if (user) {
-            users.findOne().toArray(function (error, user) {
-                if (error) {
-                    res.status(201).json({
-                        succes: false
-                        , text: "error"
-                        , user: []
-                    });
-                }
-                else {
-                    res.status(201).json({
-                        "text": "account gevonden"
-                        , user: user
-                    });
-                }
-            });
-        }
-        else {
-            res.status(201).json("account bestaat niet");
-        }
-    })
-});*/
+app.post('/random',function(res,req){
+    var liedjes=[];
+    spotifyApi.setAccessToken(res.body.accessToken);
+    spotifyApi.clientCredentialsGrant()
+  .then(function(data) {
+    // Set the access token on the API object so that it's used in all future requests
+    spotifyApi.setAccessToken(data.body['access_token']);
 
+    // Get the most popular tracks by David Bowie in Great Britain
+    return spotifyApi.getNewReleases({ limit : 5, offset: 0, country: 'BE' })
+  }).then(function(data) {
+console.log(data);
+    /*data.body.tracks.forEach(function(track, index) {
+      console.log((index+1) + '. ' + track.name + ' (popularity is ' + track.popularity + ')');
+        liedjes.push(track);
+    });*/
+        
+  req.status(201).json(data);
+  }).catch(function(err) {
+    console.log('Unfortunately, something has gone wrong.', err.message);
+  });
+});
 app.set('port', (process.env.PORT || 3000));
 app.listen(app.get('port'), function () {
     console.log('Server started on port ' + app.get('port'));
